@@ -29,6 +29,7 @@ const version = "0.3.0-dev"
 
 var (
 	listenAddress = flag.String("web.listen-address", ":9268", "Address to listen on for Prometheus requests.")
+        instance_name = flag.String("instance_name", "metrics", "The table name to use")
 	configFile    = flag.String("config.file", "config.yml", "Path to the CrateDB endpoints configuration file.")
 	print_version = flag.Bool("version", false, "Print version information.")
 
@@ -147,7 +148,7 @@ func queryToSQL(q *prompb.Query) (string, error) {
 	selectors = append(selectors, fmt.Sprintf("(timestamp <= %d)", q.EndTimestampMs))
 	selectors = append(selectors, fmt.Sprintf("(timestamp >= %d)", q.StartTimestampMs))
 
-	return fmt.Sprintf(`SELECT labels, labels_hash, timestamp, value, "valueRaw" FROM metrics WHERE %s ORDER BY timestamp`, strings.Join(selectors, " AND ")), nil
+	return fmt.Sprintf(`SELECT labels, labels_hash, timestamp, value, "valueRaw" FROM ` + *instance_name + ` WHERE %s ORDER BY timestamp`, strings.Join(selectors, " AND ")), nil
 }
 
 func responseToTimeseries(data *crateReadResponse) []*prompb.TimeSeries {
@@ -292,6 +293,7 @@ func writesToCrateRequest(req *prompb.WriteRequest) *crateWriteRequest {
 				valueRaw: int64(math.Float64bits(s.Value)),
 			})
 		}
+                log.With("Smaple_size", len(ts.Samples)).Info("Writing Samples")
 		writeSamples.Observe(float64(len(ts.Samples)))
 	}
 	return request

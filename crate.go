@@ -12,7 +12,6 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-const crateWriteStatement = `INSERT INTO metrics ("labels", "labels_hash", "timestamp", "value", "valueRaw") VALUES ($1, $2, $3, $4, $5)`
 
 type crateRow struct {
 	labels     model.Metric
@@ -84,6 +83,7 @@ func (c *crateEndpoint) endpoint() endpoint.Endpoint {
 }
 
 func (c crateEndpoint) write(ctx context.Context, r *crateWriteRequest) error {
+        crateWriteStatement := `INSERT INTO ` + *instance_name + ` ("labels", "labels_hash", "timestamp", "value", "valueRaw") VALUES ($1, $2, $3, $4, $5)`
 	_, err := c.pool.PrepareEx(ctx, "write_statement", crateWriteStatement, nil)
 	if err != nil {
 		return fmt.Errorf("error preparing write statement: %v", err)
@@ -91,6 +91,9 @@ func (c crateEndpoint) write(ctx context.Context, r *crateWriteRequest) error {
 
 	batch := c.pool.BeginBatch()
 	for _, a := range r.rows {
+                fmt.Println(a.labels)
+                fmt.Println(a.value)
+                fmt.Println(a.valueRaw)
 		batch.Queue(
 			"write_statement",
 			[]interface{}{
